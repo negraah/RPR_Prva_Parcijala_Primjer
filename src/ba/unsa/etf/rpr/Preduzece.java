@@ -1,100 +1,102 @@
 package ba.unsa.etf.rpr;
 
 import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 public class Preduzece {
     private int osnovica;
-    private List<RadnoMjesto> radnaMjesta = new ArrayList<>();
-
+    ArrayList<RadnoMjesto> mjesto = new ArrayList<RadnoMjesto>();
 
     public Preduzece(int osnovica) throws NeispravnaOsnovica {
-        postaviOsnovicu(osnovica);
-    }
-
-    public int dajOsnovicu() {
-        return this.osnovica;
-    }
-
-    public void postaviOsnovicu(int osnovica) throws NeispravnaOsnovica {
-        if(osnovica <= 0){
-            throw new NeispravnaOsnovica("Neispravna osnovica " + osnovica);
+        if(osnovica<0 || osnovica==0){
+            throw new NeispravnaOsnovica("Neispravna osnovica"+osnovica);
         }
         this.osnovica = osnovica;
     }
 
-    public void novoRadnoMjesto(RadnoMjesto radnoMjesto) {
-        radnaMjesta.add(radnoMjesto);
+    public int dajOsnovicu() {
+        return osnovica;
+    }
+
+    public void postaviOsnovicu(int osnovica) throws NeispravnaOsnovica {
+        if(osnovica<0 || osnovica==0){
+            throw new NeispravnaOsnovica("Neispravna osnovica"+osnovica);
+        }
+        this.osnovica = osnovica;
+
+    }
+
+    public void novoRadnoMjesto(RadnoMjesto rm) {
+        mjesto.add(rm);
     }
 
     public Map<RadnoMjesto, Integer> sistematizacija() {
-        Map<RadnoMjesto,Integer> result = new HashMap<>();
+        Map<RadnoMjesto, Integer> mapa = new HashMap<>();
 
-        for(RadnoMjesto radnoMjesto:radnaMjesta){
-            if(!result.containsKey(radnoMjesto)){
-                result.put(radnoMjesto,1);
+        for (RadnoMjesto radnoMjesto : mjesto) {
+            if(!mapa.containsKey(radnoMjesto)){
+                mapa.put(radnoMjesto, 1);
             }else{
-                result.put(radnoMjesto,result.get(radnoMjesto)+1);
+                mapa.put(radnoMjesto, mapa.get(radnoMjesto)+1);
             }
         }
-        return result;
+        return mapa;
     }
 
-    public void zaposli(Radnik radnik, String naziv) {
-        List<RadnoMjesto> filtrirani = radnaMjesta.stream()
-                .filter(radnoMjesto -> radnoMjesto.getNaziv().equals(naziv) && radnoMjesto.getRadnik()==null).collect(Collectors.toList());
-
-        if(filtrirani.isEmpty()){
-            throw new IllegalStateException("Nijedno radno mjesto tog tipa nije slobodno");
+    public void zaposli(Radnik r, String naziv_mjesta) {
+        for (RadnoMjesto radnoMjesto : mjesto) {
+            if(radnoMjesto.getNaziv().equals(naziv_mjesta) && radnoMjesto.jelslobodno() ){
+                radnoMjesto.setRadnik(r);
+                return;
+            }
         }
-
-        filtrirani.get(0).setRadnik(radnik);
+    throw new IllegalStateException("Nijedno radno mjesto tog tipa nije slobodno");
     }
 
     public Set<Radnik> radnici() {
-        Set<Radnik> radniks = new TreeSet();
-        for (RadnoMjesto radnoMjesto:radnaMjesta) {
-            if(radnoMjesto.getRadnik()!=null){
-                radniks.add(radnoMjesto.getRadnik());
+        Set<Radnik> setic = new TreeSet<Radnik>();
+        for (RadnoMjesto radnoMjesto : mjesto) {
+            if(radnoMjesto.getRadnik()!=null) {
+                setic.add(radnoMjesto.getRadnik());
             }
         }
-        return radniks;
+        return setic;
     }
 
     public double iznosPlate() {
-//        iznos koliko bi ukupno trebalo novca da se isplate plate svim radnicima
-        double suma = 0;
-        for (RadnoMjesto radnoMjesto:radnaMjesta) {
+        double suma_plata=0;
+        for (RadnoMjesto radnoMjesto : mjesto) {
             if(radnoMjesto.getRadnik()!=null){
-                suma+=radnoMjesto.getKoeficijent()*osnovica;
+                Radnik radnik = radnoMjesto.getRadnik();
+                double koef = radnoMjesto.getKoeficijent();
+                suma_plata += koef*osnovica;
             }
         }
-        return suma;
+        return suma_plata;
     }
 
     public void obracunajPlatu() {
 
-        radnaMjesta.stream().filter(radnoMjesto -> radnoMjesto.getRadnik() != null)
-                .forEach(radnoMjesto -> {
-                    radnoMjesto.getRadnik().dodajPlatu(osnovica * radnoMjesto.getKoeficijent());
-                });
+        for (RadnoMjesto radnoMjesto : mjesto) {
+            if(radnoMjesto.getRadnik()!=null){
+                Radnik radnik = radnoMjesto.getRadnik();
+                double koef = radnoMjesto.getKoeficijent();
+                radnik.dodajPlatu(osnovica*koef);
+            }
+        }
     }
 
-    public List<Radnik> filterRadnici(Predicate<Radnik> function) {
-//        List<Radnik> radnici = new ArrayList<>();
-//        for(RadnoMjesto radnoMjesto : radnaMjesta){
-//            if(function.apply(radnoMjesto.getRadnik())){
-//                radnici.add(radnoMjesto.getRadnik());
-//            }
-//        }
-
-        return radnaMjesta.stream().filter(radnoMjesto -> radnoMjesto.getRadnik()!=null).map(radnoMjesto -> radnoMjesto.getRadnik())
-                .filter(function).collect(Collectors.toList());
-        //return radnici;
+    public List<Radnik> filterRadnici(Function<Radnik, Boolean> f) {
+        List<Radnik> lista = new ArrayList<>();
+        for (RadnoMjesto radnoMjesto : mjesto) {
+            if(radnoMjesto.getRadnik()!=null && f.apply(radnoMjesto.getRadnik()) ){
+                lista.add(radnoMjesto.getRadnik());
+            }
+        }
+    return lista;
     }
 
-    public List<Radnik> vecaProsjecnaPlata(double prosjecnaPlata) {
-        return filterRadnici(radnik -> radnik.prosjecnaPlata()>prosjecnaPlata);
+    public List<Radnik> vecaProsjecnaPlata(double plata) {
+        return filterRadnici(radnik->radnik.prosjecnaPlata()>plata);
     }
 }

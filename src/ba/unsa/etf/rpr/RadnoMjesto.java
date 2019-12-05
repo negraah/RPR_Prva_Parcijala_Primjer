@@ -1,7 +1,8 @@
 package ba.unsa.etf.rpr;
 
-public class RadnoMjesto {
+import java.util.Objects;
 
+public class RadnoMjesto {
     private String naziv;
     private double koeficijent;
     private Radnik radnik;
@@ -13,6 +14,9 @@ public class RadnoMjesto {
     }
 
     public RadnoMjesto() {
+        naziv = "";
+        koeficijent = 0;
+        radnik = null;
     }
 
     public String getNaziv() {
@@ -38,25 +42,24 @@ public class RadnoMjesto {
     public void setRadnik(Radnik radnik) {
         this.radnik = radnik;
     }
+    public boolean jelslobodno(){
+        if(radnik==null){
+            return true;
+        }
+        return false;
+    }
 
-    @Override
+      @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         RadnoMjesto that = (RadnoMjesto) o;
-
-        if (Double.compare(that.koeficijent, koeficijent) != 0) return false;
-        return naziv != null ? naziv.equals(that.naziv) : that.naziv == null;
+        return Double.compare(that.koeficijent, koeficijent) == 0 &&
+                Objects.equals(naziv, that.naziv);
     }
 
     @Override
     public int hashCode() {
-        int result;
-        long temp;
-        result = naziv != null ? naziv.hashCode() : 0;
-        temp = Double.doubleToLongBits(koeficijent);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        return result;
+        return Objects.hash(naziv, koeficijent);
     }
 }
